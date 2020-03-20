@@ -3,7 +3,20 @@ name = "dlt"
 version = "0.1.0"
 authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "DLT (direct linear transform) algorithm for camera calibration"
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/strawlab/dlt"
+keywords = ["computer", "vision", "photogrammetry"]
+categories = ["algorithms", "computer-vision", "no-std", "science", "science::robotics"]
 
 [dependencies]
+nalgebra = {version="0.20", default-features=false}
+
+[dev-dependencies]
+approx = {version="0.3", default-features=false}
+
+[features]
+default = ["std"]
+
+std = ["nalgebra/std"]
