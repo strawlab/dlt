@@ -114,32 +114,38 @@
 #![deny(rust_2018_idioms, unsafe_code, missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
-extern crate core as std;
-
 use nalgebra::allocator::Allocator;
 use nalgebra::{
-    DVector, DefaultAllocator, Dim, DimDiff, DimMin, DimMinimum, DimSub, Dynamic, MatrixMN,
-    RealField, VectorN, U1, U11, U2, U3, U4,
+    DefaultAllocator, Dim, DimDiff, DimMin, DimMinimum, DimMul, DimProd, DimSub, MatrixMN,
+    RealField, RowVectorN, U1, U11, U2, U3, U4,
 };
 
 #[allow(non_snake_case)]
 fn build_Bc<R, N>(
     world: &MatrixMN<R, N, U3>,
     cam: &MatrixMN<R, N, U2>,
-) -> (MatrixMN<R, Dynamic, U11>, DVector<R>)
+) -> (
+    MatrixMN<R, DimProd<N, U2>, U11>,
+    MatrixMN<R, DimProd<N, U2>, U1>,
+)
 where
     R: RealField,
-    N: Dim,
-    DefaultAllocator:
-        Allocator<R, N, U3> + Allocator<R, N, U2> + Allocator<R, N, U11> + Allocator<R, N>,
+    N: DimMul<U2>,
+    DimProd<N, U2>: DimMin<U11>,
+    DefaultAllocator: Allocator<R, N, U3>
+        + Allocator<R, N, U2>
+        + Allocator<R, DimProd<N, U2>, U11>
+        + Allocator<R, DimProd<N, U2>, U1>,
 {
     let n_pts = world.nrows();
-    let mut b_data = Vec::with_capacity(n_pts * 2 * 11);
-    let mut c_data = Vec::with_capacity(n_pts * 2);
 
-    let zero = nalgebra::convert(0.0);
-    let one = nalgebra::convert(1.0);
+    let n_pts2 = DimProd::<N, U2>::from_usize(n_pts * 2);
+
+    let mut B = MatrixMN::zeros_generic(n_pts2, U11::from_usize(11));
+    let mut c = MatrixMN::zeros_generic(n_pts2, U1::from_usize(1));
+
+    let zero = nalgebra::zero();
+    let one = nalgebra::one();
 
     for i in 0..n_pts {
         let X = world[(i, 0)];
@@ -148,46 +154,25 @@ where
         let x = cam[(i, 0)];
         let y = cam[(i, 1)];
 
-        let b1 = [X, Y, Z, one, zero, zero, zero, zero, -x * X, -x * Y, -x * Z];
-        let b2 = [zero, zero, zero, zero, X, Y, Z, one, -y * X, -y * Y, -y * Z];
-        b_data.extend_from_slice(&b1);
-        b_data.extend_from_slice(&b2);
+        let tmp = RowVectorN::<R, U11>::from_row_slice_generic(
+            U1::from_usize(1),
+            U11::from_usize(11),
+            &[X, Y, Z, one, zero, zero, zero, zero, -x * X, -x * Y, -x * Z],
+        );
+        B.row_mut(i * 2).copy_from(&tmp);
 
-        c_data.push(x);
-        c_data.push(y);
+        let tmp = RowVectorN::<R, U11>::from_row_slice_generic(
+            U1::from_usize(1),
+            U11::from_usize(11),
+            &[zero, zero, zero, zero, X, Y, Z, one, -y * X, -y * Y, -y * Z],
+        );
+        B.row_mut(i * 2 + 1).copy_from(&tmp);
+
+        c[i * 2] = x;
+        c[i * 2 + 1] = y;
     }
 
-    #[allow(non_snake_case)]
-    let B = MatrixMN::<R, Dynamic, U11>::from_row_slice(&b_data);
-    let c = DVector::<R>::from_column_slice(&c_data);
-
     (B, c)
-}
-
-/// Return the least-squares solution to a linear matrix equation.
-fn lstsq<R, M, N>(
-    a: MatrixMN<R, M, N>,
-    b: &VectorN<R, M>,
-    epsilon: R,
-) -> Result<VectorN<R, N>, &'static str>
-where
-    R: RealField,
-    M: DimMin<N>,
-    N: Dim,
-    DimMinimum<M, N>: DimSub<U1>, // for Bidiagonal.
-    DefaultAllocator: Allocator<R, M, N>
-        + Allocator<R, N>
-        + Allocator<R, M>
-        + Allocator<R, DimDiff<DimMinimum<M, N>, U1>>
-        + Allocator<R, DimMinimum<M, N>, N>
-        + Allocator<R, M, DimMinimum<M, N>>
-        + Allocator<R, DimMinimum<M, N>>,
-{
-    // calculate solution with epsilon
-    let svd = nalgebra::linalg::SVD::new(a, true, true);
-    let solution = svd.solve(&b, epsilon)?;
-
-    Ok(solution)
 }
 
 /// Direct Linear Transformation (DLT) to find a camera calibration matrix.
@@ -219,24 +204,50 @@ pub fn dlt<R, N>(
     epsilon: R,
 ) -> Result<MatrixMN<R, U3, U4>, &'static str>
 where
+    // These complicated trait bounds come from:
+    // - the matrix `B` that we create has shape (N*2, 11). Thus, everything
+    //    with `DimProd<N, U2>, U11>`.
+    // - the vector `c` that we create has shape (N*2, 1). Thus, everything with
+    //    `DimProd<N, U2>, U1>`.
+    // - the SVD operation has its own complicated trait bounds. I copied the
+    //    trait bounds required from the SVD source and and then substituted
+    //    `DimProd<N, U2>` for `R` (number of rows) and `U11` for `C` (number of
+    //    columns).
     R: RealField,
-    N: Dim + DimMin<U11>,
-    DimMinimum<N, U11>: DimSub<U1>,
-    DefaultAllocator: Allocator<R, N, U11>
-        + Allocator<R, U11>
-        + Allocator<R, N>
-        + Allocator<R, N, U3>
-        + Allocator<R, N, U2>,
+    N: DimMul<U2>,
+    DimProd<N, U2>: DimMin<U11>,
+    DimMinimum<DimProd<N, U2>, U11>: DimSub<U1>,
+    DefaultAllocator: Allocator<R, N, U3>
+        + Allocator<R, N, U2>
+        + Allocator<R, DimProd<N, U2>, U11>
+        + Allocator<R, DimProd<N, U2>, U1>
+        + Allocator<R, DimMinimum<DimProd<N, U2>, U11>, U11>
+        + Allocator<R, DimProd<N, U2>, DimMinimum<DimProd<N, U2>, U11>>
+        + Allocator<R, DimMinimum<DimProd<N, U2>, U11>, U1>
+        + Allocator<R, DimDiff<DimMinimum<DimProd<N, U2>, U11>, U1>, U1>,
 {
     #[allow(non_snake_case)]
-    let (B, c) = build_Bc(&world, &cam);
+    let (B, c): (
+        MatrixMN<R, DimProd<N, U2>, U11>,
+        MatrixMN<R, DimProd<N, U2>, U1>,
+    ) = build_Bc(&world, &cam);
 
-    let solution: VectorN<R, U11> = lstsq(B, &c, epsilon)?;
+    // calculate solution with epsilon
+    let svd = nalgebra::linalg::SVD::<R, DimProd<N, U2>, U11>::try_new(
+        B,
+        true,
+        true,
+        R::default_epsilon(),
+        0,
+    )
+    .ok_or("svd failed")?;
+    let solution = svd.solve(&c, epsilon)?;
 
-    let one = nalgebra::convert(1.0);
-    let mut pmat_data = solution.as_slice().to_vec();
-    pmat_data.push(one);
-    let pmat = MatrixMN::<R, U3, U4>::from_row_slice(&pmat_data);
+    let mut pmat_t = MatrixMN::<R, U4, U3>::zeros();
+    pmat_t.as_mut_slice()[0..11].copy_from_slice(solution.as_slice());
+    pmat_t[(3, 2)] = nalgebra::one();
+
+    let pmat = pmat_t.transpose();
 
     Ok(pmat)
 }
@@ -246,35 +257,30 @@ where
 /// Used by the [`dlt_corresponding`](fn.dlt_corresponding.html) function as a
 /// convenience compared to calling the [`dlt`](fn.dlt.html) function directly.
 #[derive(Debug)]
-pub struct CorrespondingPoint {
+pub struct CorrespondingPoint<R: RealField> {
     /// the location of the point in 3D world coordinates
-    pub object_point: (f64, f64, f64),
+    pub object_point: [R; 3],
     /// the location of the point in 2D pixel coordinates
-    pub image_point: (f64, f64),
+    pub image_point: [R; 2],
 }
 
+#[cfg(feature = "std")]
 /// Convenience wrapper around the [`dlt`](fn.dlt.html) function.
 ///
 /// This allows using the [`CorrespondingPoint`](struct.CorrespondingPoint.html)
 /// if you find that easier.
-pub fn dlt_corresponding(
-    points: &[CorrespondingPoint],
-    epsilon: f64,
-) -> Result<MatrixMN<f64, U3, U4>, &'static str> {
-    // build matrices from input data
-    let world_data: Vec<f64> = points
-        .iter()
-        .map(|p| vec![p.object_point.0, p.object_point.1, p.object_point.2])
-        .flatten()
-        .collect();
-    let world_mat = nalgebra::MatrixMN::<f64, nalgebra::Dynamic, U3>::from_row_slice(&world_data);
+///
+/// Requires the `std` feature.
+pub fn dlt_corresponding<R: RealField>(
+    points: &[CorrespondingPoint<R>],
+    epsilon: R,
+) -> Result<MatrixMN<R, U3, U4>, &'static str> {
+    let nrows = nalgebra::Dynamic::from_usize(points.len());
 
-    let image_data: Vec<f64> = points
-        .iter()
-        .map(|p| vec![p.image_point.0, p.image_point.1])
-        .flatten()
-        .collect();
-    let image_mat = nalgebra::MatrixMN::<f64, nalgebra::Dynamic, U2>::from_row_slice(&image_data);
+    let world_mat =
+        nalgebra::MatrixMN::from_fn_generic(nrows, U3, |i, j| points[i].object_point[j]);
+
+    let image_mat = nalgebra::MatrixMN::from_fn_generic(nrows, U2, |i, j| points[i].image_point[j]);
 
     // perform the DLT
     dlt(&world_mat, &image_mat, epsilon)
@@ -283,6 +289,97 @@ pub fn dlt_corresponding(
 #[cfg(test)]
 mod tests {
     use nalgebra::{Dynamic, MatrixMN, U2, U3, U4, U8};
+
+    #[test]
+    fn test_dlt_corresponding() {
+        use crate::CorrespondingPoint;
+
+        let points: Vec<CorrespondingPoint<f64>> = vec![
+            CorrespondingPoint {
+                object_point: [-1., -2., -3.],
+                image_point: [219.700, 39.400],
+            },
+            CorrespondingPoint {
+                object_point: [0., 0., 0.],
+                image_point: [320.000, 240.000],
+            },
+            CorrespondingPoint {
+                object_point: [1., 2., 3.],
+                image_point: [420.300, 440.600],
+            },
+            CorrespondingPoint {
+                object_point: [1.1, 2.2, 3.3],
+                image_point: [430.330, 460.660],
+            },
+            CorrespondingPoint {
+                object_point: [4., 5., 6.],
+                image_point: [720.600, 741.200],
+            },
+            CorrespondingPoint {
+                object_point: [4.4, 5.5, 6.6],
+                image_point: [760.660, 791.320],
+            },
+            CorrespondingPoint {
+                object_point: [7., 8., 9.],
+                image_point: [1020.900, 1041.800],
+            },
+            CorrespondingPoint {
+                object_point: [7.7, 8.8, 9.9],
+                image_point: [1090.990, 1121.980],
+            },
+        ];
+
+        crate::dlt_corresponding(&points, 1e-10).unwrap();
+    }
+
+    #[test]
+    fn test_cam_geom() {
+        use crate::{dlt_corresponding, CorrespondingPoint};
+        use cam_geom::{Camera, Points};
+
+        let points: Vec<CorrespondingPoint<f64>> = vec![
+            CorrespondingPoint {
+                object_point: [-1., -2., -3.],
+                image_point: [219.700, 39.400],
+            },
+            CorrespondingPoint {
+                object_point: [0., 0., 0.],
+                image_point: [320.000, 240.000],
+            },
+            CorrespondingPoint {
+                object_point: [1., 2., 3.],
+                image_point: [420.300, 440.600],
+            },
+            CorrespondingPoint {
+                object_point: [1.1, 2.2, 3.3],
+                image_point: [430.330, 460.660],
+            },
+            CorrespondingPoint {
+                object_point: [4., 5., 6.],
+                image_point: [720.600, 741.200],
+            },
+            CorrespondingPoint {
+                object_point: [4.4, 5.5, 6.6],
+                image_point: [760.660, 791.320],
+            },
+            CorrespondingPoint {
+                object_point: [7., 8., 9.],
+                image_point: [1020.900, 1041.800],
+            },
+            CorrespondingPoint {
+                object_point: [7.7, 8.8, 9.9],
+                image_point: [1090.990, 1121.980],
+            },
+        ];
+
+        let pmat = dlt_corresponding(&points, 1e-10).unwrap();
+        let cam = Camera::from_perspective_matrix(&pmat).unwrap();
+        for orig in points.iter() {
+            let world = Points::new(nalgebra::RowVector3::from_row_slice(&orig.object_point));
+            let px = cam.world_to_pixel(&world);
+            approx::assert_relative_eq!(px.data.as_slice(), &orig.image_point[..], epsilon = 1e-4);
+        }
+    }
 
     #[test]
     fn test_dlt_dynamic() {

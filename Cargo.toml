@@ -1,6 +1,6 @@
 [package]
 name = "dlt"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2018"
 description = "DLT (direct linear transform) algorithm for camera calibration"
@@ -15,8 +15,9 @@ nalgebra = {version="0.20", default-features=false}
 
 [dev-dependencies]
 approx = {version="0.3", default-features=false}
+cam-geom = {version="0.2", default-features=false}
 
 [features]
 default = ["std"]
 
-std = ["nalgebra/std"]
+std = ["nalgebra/std", "cam-geom/std"]
