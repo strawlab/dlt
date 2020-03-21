@@ -40,76 +40,50 @@ will be fixed.**
 ## Example
 
 ```rust
-use nalgebra::{Dynamic, MatrixMN, U2, U3, U4, U8};
+use dlt::{dlt_corresponding, CorrespondingPoint};
+use cam_geom::{Camera, Points};
 
-// homogeneous 3D coords
-let x3dh_data: Vec<f64> = vec![
-    -1., -2., -3., 1.0,
-    0., 0., 0., 1.0,
-    1., 2., 3., 1.0,
-    1.1, 2.2, 3.3, 1.0,
-    4., 5., 6., 1.0,
-    4.4, 5.5, 6.6, 1.0,
-    7., 8., 9., 1.0,
-    7.7, 8.8, 9.9, 1.0,
-    ];
+let points: Vec<CorrespondingPoint<f64>> = vec![
+    CorrespondingPoint {
+        object_point: [-1., -2., -3.],
+        image_point: [219.700, 39.400],
+    },
+    CorrespondingPoint {
+        object_point: [0., 0., 0.],
+        image_point: [320.000, 240.000],
+    },
+    CorrespondingPoint {
+        object_point: [1., 2., 3.],
+        image_point: [420.300, 440.600],
+    },
+    CorrespondingPoint {
+        object_point: [1.1, 2.2, 3.3],
+        image_point: [430.330, 460.660],
+    },
+    CorrespondingPoint {
+        object_point: [4., 5., 6.],
+        image_point: [720.600, 741.200],
+    },
+    CorrespondingPoint {
+        object_point: [4.4, 5.5, 6.6],
+        image_point: [760.660, 791.320],
+    },
+    CorrespondingPoint {
+        object_point: [7., 8., 9.],
+        image_point: [1020.900, 1041.800],
+    },
+    CorrespondingPoint {
+        object_point: [7.7, 8.8, 9.9],
+        image_point: [1090.990, 1121.980],
+    },
+];
 
-let n_points = x3dh_data.len() / 4;
-
-let x3dh = MatrixMN::<_, Dynamic, U4>::from_row_slice(&x3dh_data);
-
-// example camera calibration matrix
-#[rustfmt::skip]
-let pmat_data: Vec<f64> = vec![
-    100.0,  0.0, 0.1, 320.0,
-    0.0, 100.0, 0.2, 240.0,
-    0.0,  0.0, 0.0,   1.0,
-    ];
-let pmat = MatrixMN::<_, U3, U4>::from_row_slice(&pmat_data);
-
-// compute 2d coordinates of camera projection
-let x2dh = pmat * x3dh.transpose();
-
-// convert 2D homogeneous coords into normal 2D coords
-let mut data = Vec::with_capacity(2 * n_points);
-for i in 0..n_points {
-    let r = x2dh[(0, i)];
-    let s = x2dh[(1, i)];
-    let t = x2dh[(2, i)];
-    data.push(r / t);
-    data.push(s / t);
-}
-let x2d_expected = MatrixMN::<_, Dynamic, U2>::from_row_slice(&data);
-
-// convert homogeneous 3D coords into normal 3D coords
-let x3d = x3dh.fixed_columns::<U3>(0).into_owned();
-// perform DLT
-let dlt_results = dlt::dlt(&x3d, &x2d_expected, 1e-10).unwrap();
-
-// compute 2d coordinates of camera projection with DLT-found matrix
-let x2dh2 = dlt_results * x3dh.transpose();
-
-// convert 2D homogeneous coords into normal 2D coords
-let mut data = Vec::with_capacity(2 * n_points);
-for i in 0..n_points {
-    let r = x2dh2[(0, i)];
-    let s = x2dh2[(1, i)];
-    let t = x2dh2[(2, i)];
-    data.push(r / t);
-    data.push(s / t);
-}
-let x2d_actual = MatrixMN::<_, Dynamic, U2>::from_row_slice(&data);
-
-assert_eq!(x2d_expected.nrows(), x2d_actual.nrows());
-assert_eq!(x2d_expected.ncols(), x2d_actual.ncols());
-for i in 0..x2d_expected.nrows() {
-    for j in 0..x2d_expected.ncols() {
-        approx::assert_relative_eq!(
-            x2d_expected[(i, j)],
-            x2d_actual[(i, j)],
-            epsilon = 1e-10
-        );
-    }
+let pmat = dlt_corresponding(&points, 1e-10).unwrap();
+let cam = Camera::from_perspective_matrix(&pmat).unwrap();
+for orig in points.iter() {
+    let world = Points::new(nalgebra::RowVector3::from_row_slice(&orig.object_point));
+    let px = cam.world_to_pixel(&world);
+    approx::assert_relative_eq!(px.data.as_slice(), &orig.image_point[..], epsilon = 1e-4);
 }
 ```
 
