@@ -25,9 +25,6 @@
 //! cargo build --no-default-features --target thumbv7em-none-eabihf
 //! ```
 //!
-//! **Currently, this crate does not build without std, but this is a bug that
-//! will be fixed.**
-//!
 //! # Example
 //!
 //! ```
