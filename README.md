@@ -39,7 +39,6 @@ cargo build --no-default-features --target thumbv7em-none-eabihf
 
 ```rust
 use dlt::{dlt_corresponding, CorrespondingPoint};
-use cam_geom::{Camera, Points};
 
 let points: Vec<CorrespondingPoint<f64>> = vec![
     CorrespondingPoint {
@@ -77,12 +76,7 @@ let points: Vec<CorrespondingPoint<f64>> = vec![
 ];
 
 let pmat = dlt_corresponding(&points, 1e-10).unwrap();
-let cam = Camera::from_perspective_matrix(&pmat).unwrap();
-for orig in points.iter() {
-    let world = Points::new(nalgebra::RowVector3::from_row_slice(&orig.object_point));
-    let px = cam.world_to_pixel(&world);
-    approx::assert_relative_eq!(px.data.as_slice(), &orig.image_point[..], epsilon = 1e-4);
-}
+// could now call `cam_geom::Camera::from_perspective_matrix(&pmat)`
 ```
 
 ## See also
@@ -91,6 +85,9 @@ You may also be interested in:
 
 - [`cam-geom`](https://crates.io/crates/cam-geom) - Rust crate with 3D
   camera models which can use the calibration data from DLT.
+- [`dlt-examples`](https://github.com/strawlab/dlt/blob/master/dlt-examples)
+  - Unpublished crate in the dlt repository which demonstrates usage with
+  cam-geom library.
 
 ## Regenerate `README.md`
 
