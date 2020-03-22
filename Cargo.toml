@@ -15,9 +15,11 @@ nalgebra = {version="0.20", default-features=false}
 
 [dev-dependencies]
 approx = {version="0.3", default-features=false}
-cam-geom = {version="0.2"}
 
 [features]
 default = ["std"]
 
 std = ["nalgebra/std"]
+
+[workspace]
+members = ["dlt-examples"]

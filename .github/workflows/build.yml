@@ -17,6 +17,8 @@ jobs:
       run: cargo build
     - name: Run tests
       run: cargo test
+    - name: Run example
+      run: cd dlt-examples && cargo run
 
   nostd-ubuntu:
 
