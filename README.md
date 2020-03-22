@@ -6,6 +6,7 @@
 [![Documentation](https://docs.rs/dlt/badge.svg)](https://docs.rs/dlt/)
 [![Crate License](https://img.shields.io/crates/l/dlt.svg)](https://crates.io/crates/dlt)
 [![Dependency status](https://deps.rs/repo/github/strawlab/dlt/status.svg)](https://deps.rs/repo/github/strawlab/dlt)
+[![build](https://github.com/strawlab/dlt/workflows/build/badge.svg?branch=master)](https://github.com/strawlab/dlt/actions?query=branch%3Amaster)
 
 DLT (direct linear transform) algorithm for camera calibration
 
