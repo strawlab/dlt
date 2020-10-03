@@ -1,5 +1,5 @@
-use dlt::{dlt_corresponding, CorrespondingPoint};
 use cam_geom::{Camera, Points};
+use dlt::{dlt_corresponding, CorrespondingPoint};
 
 fn main() {
     let points: Vec<CorrespondingPoint<f64>> = vec![
