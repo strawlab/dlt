@@ -88,9 +88,6 @@ use nalgebra::{
     RealField, SMatrix, U1, U11, U2, U3,
 };
 
-#[cfg(feature = "std")]
-use nalgebra::U4;
-
 #[allow(non_snake_case)]
 struct Bc<R, N>
 where
@@ -229,7 +226,7 @@ where
     Ok(pmat)
 }
 
-/// A point with a view in image (2D) and world (3D).
+/// A point with a view in image (2D) and world (3D) coordinates.
 ///
 /// Used by the [`dlt_corresponding`](fn.dlt_corresponding.html) function as a
 /// convenience compared to calling the [`dlt`](fn.dlt.html) function directly.
@@ -251,7 +248,7 @@ pub struct CorrespondingPoint<R: RealField> {
 pub fn dlt_corresponding<R: RealField>(
     points: &[CorrespondingPoint<R>],
     epsilon: R,
-) -> Result<OMatrix<R, U3, U4>, &'static str> {
+) -> Result<SMatrix<R, 3, 4>, &'static str> {
     let nrows = nalgebra::Dynamic::from_usize(points.len());
     // let u2 = nalgebra::Dynamic::from_usize(2);
     let u2 = U2::from_usize(2);
