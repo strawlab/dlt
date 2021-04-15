@@ -84,8 +84,8 @@
 
 use nalgebra::allocator::Allocator;
 use nalgebra::{
-    DefaultAllocator, Dim, DimDiff, DimMin, DimMinimum, DimMul, DimProd, DimSub, MatrixMN,
-    RealField, RowVectorN, U1, U11, U2, U3, U4,
+    DefaultAllocator, Dim, DimDiff, DimMin, DimMinimum, DimMul, DimProd, DimSub, MatrixMN, OMatrix,
+    OVector, RealField, SMatrix, U1, U11, U2, U3, U4,
 };
 
 #[allow(non_snake_case)]
@@ -122,14 +122,14 @@ where
         let x = cam[(i, 0)];
         let y = cam[(i, 1)];
 
-        let tmp = RowVectorN::<R, U11>::from_row_slice_generic(
+        let tmp = OMatrix::<R, U1, U11>::from_row_slice_generic(
             U1::from_usize(1),
             U11::from_usize(11),
             &[X, Y, Z, one, zero, zero, zero, zero, -x * X, -x * Y, -x * Z],
         );
         B.row_mut(i * 2).copy_from(&tmp);
 
-        let tmp = RowVectorN::<R, U11>::from_row_slice_generic(
+        let tmp = OMatrix::<R, U1, U11>::from_row_slice_generic(
             U1::from_usize(1),
             U11::from_usize(11),
             &[zero, zero, zero, zero, X, Y, Z, one, -y * X, -y * Y, -y * Z],
@@ -167,10 +167,10 @@ where
 /// See
 /// [http://www.kwon3d.com/theory/dlt/dlt.html](http://www.kwon3d.com/theory/dlt/dlt.html).
 pub fn dlt<R, N>(
-    world: &MatrixMN<R, N, U3>,
-    cam: &MatrixMN<R, N, U2>,
+    world: &OMatrix<R, N, U3>,
+    cam: &OMatrix<R, N, U2>,
     epsilon: R,
-) -> Result<MatrixMN<R, U3, U4>, &'static str>
+) -> Result<SMatrix<R, 3, 4>, &'static str>
 where
     // These complicated trait bounds come from:
     // - the matrix `B` that we create has shape (N*2, 11). Thus, everything
@@ -211,7 +211,7 @@ where
     .ok_or("svd failed")?;
     let solution = svd.solve(&c, epsilon)?;
 
-    let mut pmat_t = MatrixMN::<R, U4, U3>::zeros();
+    let mut pmat_t = SMatrix::<R, 4, 3>::zeros();
     pmat_t.as_mut_slice()[0..11].copy_from_slice(solution.as_slice());
     pmat_t[(3, 2)] = nalgebra::one();
 
@@ -244,11 +244,15 @@ pub fn dlt_corresponding<R: RealField>(
     epsilon: R,
 ) -> Result<MatrixMN<R, U3, U4>, &'static str> {
     let nrows = nalgebra::Dynamic::from_usize(points.len());
+    // let u2 = nalgebra::Dynamic::from_usize(2);
+    let u2 = U2::from_usize(2);
+    // let u3 = nalgebra::Dynamic::from_usize(3);
+    let u3 = U3::from_usize(3);
 
     let world_mat =
-        nalgebra::MatrixMN::from_fn_generic(nrows, U3, |i, j| points[i].object_point[j]);
+        nalgebra::MatrixMN::from_fn_generic(nrows, u3, |i, j| points[i].object_point[j]);
 
-    let image_mat = nalgebra::MatrixMN::from_fn_generic(nrows, U2, |i, j| points[i].image_point[j]);
+    let image_mat = nalgebra::MatrixMN::from_fn_generic(nrows, u2, |i, j| points[i].image_point[j]);
 
     // perform the DLT
     dlt(&world_mat, &image_mat, epsilon)
@@ -343,7 +347,7 @@ mod tests {
         let x2d_expected = MatrixMN::<_, Dynamic, U2>::from_row_slice(&data);
 
         // convert homogeneous 3D coords into normal 3D coords
-        let x3d = x3dh.fixed_columns::<U3>(0).into_owned();
+        let x3d = x3dh.fixed_columns::<3>(0).into_owned();
         // perform DLT
         let dlt_results = crate::dlt(&x3d, &x2d_expected, 1e-10).unwrap();
 
@@ -418,7 +422,7 @@ mod tests {
         let x2d_expected = MatrixMN::<_, U8, U2>::from_row_slice(&data);
 
         // convert homogeneous 3D coords into normal 3D coords
-        let x3d = x3dh.fixed_columns::<U3>(0).into_owned();
+        let x3d = x3dh.fixed_columns::<3>(0).into_owned();
         // perform DLT
         let dlt_results = crate::dlt(&x3d, &x2d_expected, 1e-10).unwrap();
 
