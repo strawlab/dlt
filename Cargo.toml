@@ -1,6 +1,6 @@
 [package]
 name = "dlt"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2018"
 description = "DLT (direct linear transform) algorithm for camera calibration"
