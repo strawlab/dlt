@@ -92,13 +92,22 @@ use nalgebra::{
 use nalgebra::U4;
 
 #[allow(non_snake_case)]
-fn build_Bc<R, N>(
-    world: &OMatrix<R, N, U3>,
-    cam: &OMatrix<R, N, U2>,
-) -> (
-    OMatrix<R, DimProd<N, U2>, U11>,
-    OMatrix<R, DimProd<N, U2>, U1>,
-)
+struct Bc<R, N>
+where
+    R: RealField,
+    N: DimMul<U2>,
+    DimProd<N, U2>: DimMin<U11>,
+    DefaultAllocator: Allocator<R, N, U3>
+        + Allocator<R, N, U2>
+        + Allocator<R, DimProd<N, U2>, U11>
+        + Allocator<R, DimProd<N, U2>, U1>,
+{
+    B: OMatrix<R, DimProd<N, U2>, U11>,
+    c: OMatrix<R, DimProd<N, U2>, U1>,
+}
+
+#[allow(non_snake_case)]
+fn build_Bc<R, N>(world: &OMatrix<R, N, U3>, cam: &OMatrix<R, N, U2>) -> Bc<R, N>
 where
     R: RealField,
     N: DimMul<U2>,
@@ -143,7 +152,7 @@ where
         c[i * 2 + 1] = y;
     }
 
-    (B, c)
+    Bc { B, c }
 }
 
 /// Direct Linear Transformation (DLT) to find a camera calibration matrix.
@@ -198,10 +207,7 @@ where
         + Allocator<R, DimDiff<DimMinimum<DimProd<N, U2>, U11>, U1>, U1>,
 {
     #[allow(non_snake_case)]
-    let (B, c): (
-        OMatrix<R, DimProd<N, U2>, U11>,
-        OMatrix<R, DimProd<N, U2>, U1>,
-    ) = build_Bc(&world, &cam);
+    let Bc { B, c } = build_Bc(&world, &cam);
 
     // calculate solution with epsilon
     let svd = nalgebra::linalg::SVD::<R, DimProd<N, U2>, U11>::try_new(
