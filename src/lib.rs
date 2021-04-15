@@ -84,17 +84,20 @@
 
 use nalgebra::allocator::Allocator;
 use nalgebra::{
-    DefaultAllocator, Dim, DimDiff, DimMin, DimMinimum, DimMul, DimProd, DimSub, MatrixMN, OMatrix,
-    OVector, RealField, SMatrix, U1, U11, U2, U3, U4,
+    DefaultAllocator, Dim, DimDiff, DimMin, DimMinimum, DimMul, DimProd, DimSub, OMatrix,
+    RealField, SMatrix, U1, U11, U2, U3,
 };
+
+#[cfg(feature = "std")]
+use nalgebra::U4;
 
 #[allow(non_snake_case)]
 fn build_Bc<R, N>(
-    world: &MatrixMN<R, N, U3>,
-    cam: &MatrixMN<R, N, U2>,
+    world: &OMatrix<R, N, U3>,
+    cam: &OMatrix<R, N, U2>,
 ) -> (
-    MatrixMN<R, DimProd<N, U2>, U11>,
-    MatrixMN<R, DimProd<N, U2>, U1>,
+    OMatrix<R, DimProd<N, U2>, U11>,
+    OMatrix<R, DimProd<N, U2>, U1>,
 )
 where
     R: RealField,
@@ -109,8 +112,8 @@ where
 
     let n_pts2 = DimProd::<N, U2>::from_usize(n_pts * 2);
 
-    let mut B = MatrixMN::zeros_generic(n_pts2, U11::from_usize(11));
-    let mut c = MatrixMN::zeros_generic(n_pts2, U1::from_usize(1));
+    let mut B = OMatrix::zeros_generic(n_pts2, U11::from_usize(11));
+    let mut c = OMatrix::zeros_generic(n_pts2, U1::from_usize(1));
 
     let zero = nalgebra::zero();
     let one = nalgebra::one();
@@ -196,8 +199,8 @@ where
 {
     #[allow(non_snake_case)]
     let (B, c): (
-        MatrixMN<R, DimProd<N, U2>, U11>,
-        MatrixMN<R, DimProd<N, U2>, U1>,
+        OMatrix<R, DimProd<N, U2>, U11>,
+        OMatrix<R, DimProd<N, U2>, U1>,
     ) = build_Bc(&world, &cam);
 
     // calculate solution with epsilon
@@ -242,17 +245,16 @@ pub struct CorrespondingPoint<R: RealField> {
 pub fn dlt_corresponding<R: RealField>(
     points: &[CorrespondingPoint<R>],
     epsilon: R,
-) -> Result<MatrixMN<R, U3, U4>, &'static str> {
+) -> Result<OMatrix<R, U3, U4>, &'static str> {
     let nrows = nalgebra::Dynamic::from_usize(points.len());
     // let u2 = nalgebra::Dynamic::from_usize(2);
     let u2 = U2::from_usize(2);
     // let u3 = nalgebra::Dynamic::from_usize(3);
     let u3 = U3::from_usize(3);
 
-    let world_mat =
-        nalgebra::MatrixMN::from_fn_generic(nrows, u3, |i, j| points[i].object_point[j]);
+    let world_mat = nalgebra::OMatrix::from_fn_generic(nrows, u3, |i, j| points[i].object_point[j]);
 
-    let image_mat = nalgebra::MatrixMN::from_fn_generic(nrows, u2, |i, j| points[i].image_point[j]);
+    let image_mat = nalgebra::OMatrix::from_fn_generic(nrows, u2, |i, j| points[i].image_point[j]);
 
     // perform the DLT
     dlt(&world_mat, &image_mat, epsilon)
@@ -260,7 +262,7 @@ pub fn dlt_corresponding<R: RealField>(
 
 #[cfg(test)]
 mod tests {
-    use nalgebra::{Dynamic, MatrixMN, U2, U3, U4, U8};
+    use nalgebra::{Dynamic, OMatrix, U2, U3, U4, U8};
 
     #[test]
     fn test_dlt_corresponding() {
@@ -321,7 +323,7 @@ mod tests {
 
         let n_points = x3dh_data.len() / 4;
 
-        let x3dh = MatrixMN::<_, Dynamic, U4>::from_row_slice(&x3dh_data);
+        let x3dh = OMatrix::<_, Dynamic, U4>::from_row_slice(&x3dh_data);
 
         // example camera calibration matrix
         #[rustfmt::skip]
@@ -330,7 +332,7 @@ mod tests {
             0.0, 100.0, 0.2, 240.0,
             0.0,  0.0, 0.0,   1.0,
             ];
-        let pmat = MatrixMN::<_, U3, U4>::from_row_slice(&pmat_data);
+        let pmat = OMatrix::<_, U3, U4>::from_row_slice(&pmat_data);
 
         // compute 2d coordinates of camera projection
         let x2dh = pmat * x3dh.transpose();
@@ -344,7 +346,7 @@ mod tests {
             data.push(r / t);
             data.push(s / t);
         }
-        let x2d_expected = MatrixMN::<_, Dynamic, U2>::from_row_slice(&data);
+        let x2d_expected = OMatrix::<_, Dynamic, U2>::from_row_slice(&data);
 
         // convert homogeneous 3D coords into normal 3D coords
         let x3d = x3dh.fixed_columns::<3>(0).into_owned();
@@ -363,7 +365,7 @@ mod tests {
             data.push(r / t);
             data.push(s / t);
         }
-        let x2d_actual = MatrixMN::<_, Dynamic, U2>::from_row_slice(&data);
+        let x2d_actual = OMatrix::<_, Dynamic, U2>::from_row_slice(&data);
 
         assert_eq!(x2d_expected.nrows(), x2d_actual.nrows());
         assert_eq!(x2d_expected.ncols(), x2d_actual.ncols());
@@ -396,7 +398,7 @@ mod tests {
         let n_points = x3dh_data.len() / 4;
         assert!(n_points == 8);
 
-        let x3dh = MatrixMN::<_, U8, U4>::from_row_slice(&x3dh_data);
+        let x3dh = OMatrix::<_, U8, U4>::from_row_slice(&x3dh_data);
 
         // example camera calibration matrix
         #[rustfmt::skip]
@@ -405,7 +407,7 @@ mod tests {
             0.0, 100.0, 0.2, 240.0,
             0.0,  0.0, 0.0,   1.0,
             ];
-        let pmat = MatrixMN::<_, U3, U4>::from_row_slice(&pmat_data);
+        let pmat = OMatrix::<_, U3, U4>::from_row_slice(&pmat_data);
 
         // compute 2d coordinates of camera projection
         let x2dh = pmat * x3dh.transpose();
@@ -419,7 +421,7 @@ mod tests {
             data.push(r / t);
             data.push(s / t);
         }
-        let x2d_expected = MatrixMN::<_, U8, U2>::from_row_slice(&data);
+        let x2d_expected = OMatrix::<_, U8, U2>::from_row_slice(&data);
 
         // convert homogeneous 3D coords into normal 3D coords
         let x3d = x3dh.fixed_columns::<3>(0).into_owned();
@@ -438,7 +440,7 @@ mod tests {
             data.push(r / t);
             data.push(s / t);
         }
-        let x2d_actual = MatrixMN::<_, U8, U2>::from_row_slice(&data);
+        let x2d_actual = OMatrix::<_, U8, U2>::from_row_slice(&data);
 
         assert_eq!(x2d_expected.nrows(), x2d_actual.nrows());
         assert_eq!(x2d_expected.ncols(), x2d_actual.ncols());
