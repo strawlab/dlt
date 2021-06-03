@@ -11,4 +11,4 @@ repository = "https://github.com/strawlab/dlt"
 dlt = {path=".."}
 cam-geom = "0.8"
 nalgebra = "0.26"
-approx = "0.4"
+approx = "0.5"
