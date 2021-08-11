@@ -9,6 +9,6 @@ repository = "https://github.com/strawlab/dlt"
 
 [dependencies]
 dlt = {path=".."}
-cam-geom = "0.10"
+cam-geom = "0.11"
 nalgebra = "0.28"
 approx = "0.5"
