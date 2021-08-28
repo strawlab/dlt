@@ -106,7 +106,7 @@ where
 #[allow(non_snake_case)]
 fn build_Bc<R, N>(world: &OMatrix<R, N, U3>, cam: &OMatrix<R, N, U2>) -> Bc<R, N>
 where
-    R: RealField,
+    R: RealField + Copy,
     N: DimMul<U2>,
     DimProd<N, U2>: DimMin<U11>,
     DefaultAllocator: Allocator<R, N, U3>
@@ -190,7 +190,7 @@ where
     //    trait bounds required from the SVD source and and then substituted
     //    `DimProd<N, U2>` for `R` (number of rows) and `U11` for `C` (number of
     //    columns).
-    R: RealField,
+    R: RealField + Copy,
     N: DimMul<U2>,
     DimProd<N, U2>: DimMin<U11>,
     DimMinimum<DimProd<N, U2>, U11>: DimSub<U1>,
@@ -245,7 +245,7 @@ pub struct CorrespondingPoint<R: RealField> {
 /// if you find that easier.
 ///
 /// Requires the `std` feature.
-pub fn dlt_corresponding<R: RealField>(
+pub fn dlt_corresponding<R: RealField + Copy>(
     points: &[CorrespondingPoint<R>],
     epsilon: R,
 ) -> Result<SMatrix<R, 3, 4>, &'static str> {
