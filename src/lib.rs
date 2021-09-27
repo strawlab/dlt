@@ -88,6 +88,9 @@ use nalgebra::{
     RealField, SMatrix, U1, U11, U2, U3,
 };
 
+#[cfg(feature = "serde-serialize")]
+use serde::{Deserialize, Serialize};
+
 #[allow(non_snake_case)]
 struct Bc<R, N>
 where
@@ -231,6 +234,7 @@ where
 /// Used by the [`dlt_corresponding`](fn.dlt_corresponding.html) function as a
 /// convenience compared to calling the [`dlt`](fn.dlt.html) function directly.
 #[derive(Debug)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct CorrespondingPoint<R: RealField> {
     /// the location of the point in 3D world coordinates
     pub object_point: [R; 3],
