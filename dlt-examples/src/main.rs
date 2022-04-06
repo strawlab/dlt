@@ -45,7 +45,7 @@ fn main() {
     for orig in points.iter() {
         let world = Points::new(nalgebra::RowVector3::from_row_slice(&orig.object_point));
         let px = cam.world_to_pixel(&world);
-        approx::assert_relative_eq!(px.data.as_slice(), &orig.image_point[..], epsilon = 1e-4);
+        approx::assert_relative_eq!(px.data.as_slice(), &orig.image_point[..], epsilon = 1e-3);
         println!("   {}    ->     {}", world.data, px.data);
     }
 }
