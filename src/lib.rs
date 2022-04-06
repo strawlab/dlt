@@ -198,6 +198,8 @@ where
     DimProd<N, U2>: DimMin<U11>,
     DimMinimum<DimProd<N, U2>, U11>: DimSub<U1>,
     DefaultAllocator: Allocator<R, N, U3>
+        + Allocator<(usize, usize), <<N as DimMul<U2>>::Output as DimMin<U11>>::Output>
+        + Allocator<(R, usize), <<N as DimMul<U2>>::Output as DimMin<U11>>::Output>
         + Allocator<R, N, U2>
         + Allocator<R, DimProd<N, U2>, U11>
         + Allocator<R, DimProd<N, U2>, U1>
