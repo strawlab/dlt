@@ -209,7 +209,7 @@ where
         + Allocator<R, DimDiff<DimMinimum<DimProd<N, U2>, U11>, U1>, U1>,
 {
     #[allow(non_snake_case)]
-    let Bc { B, c } = build_Bc(&world, &cam);
+    let Bc { B, c } = build_Bc(world, cam);
 
     // calculate solution with epsilon
     let svd = nalgebra::linalg::SVD::<R, DimProd<N, U2>, U11>::try_new(
