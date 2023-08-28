@@ -160,7 +160,7 @@ where
 /// Takes `world`, a matrix of 3D world coordinates, and `cam` a matrix of 2D
 /// camera coordinates, which is the image of the world coordinates via the
 /// desired projection matrix. Generic over `N`, the number of points, which
-/// must be at least `nalgebra::U6`, and can also be `nalgebra::Dynamic`. Also
+/// must be at least `nalgebra::U6`, and can also be `nalgebra::Dyn`. Also
 /// generic over `R`, the data type, which must implement `nalgebra::RealField`.
 ///
 /// You may find it more ergonomic to use the
@@ -255,10 +255,10 @@ pub fn dlt_corresponding<R: RealField + Copy>(
     points: &[CorrespondingPoint<R>],
     epsilon: R,
 ) -> Result<SMatrix<R, 3, 4>, &'static str> {
-    let nrows = nalgebra::Dynamic::from_usize(points.len());
-    // let u2 = nalgebra::Dynamic::from_usize(2);
+    let nrows = nalgebra::Dyn::from_usize(points.len());
+    // let u2 = nalgebra::Dyn::from_usize(2);
     let u2 = U2::from_usize(2);
-    // let u3 = nalgebra::Dynamic::from_usize(3);
+    // let u3 = nalgebra::Dyn::from_usize(3);
     let u3 = U3::from_usize(3);
 
     let world_mat = nalgebra::OMatrix::from_fn_generic(nrows, u3, |i, j| points[i].object_point[j]);
@@ -271,7 +271,7 @@ pub fn dlt_corresponding<R: RealField + Copy>(
 
 #[cfg(test)]
 mod tests {
-    use nalgebra::{Dynamic, OMatrix, U2, U3, U4, U8};
+    use nalgebra::{Dyn, OMatrix, U2, U3, U4, U8};
 
     #[test]
     fn test_dlt_corresponding() {
@@ -332,7 +332,7 @@ mod tests {
 
         let n_points = x3dh_data.len() / 4;
 
-        let x3dh = OMatrix::<_, Dynamic, U4>::from_row_slice(&x3dh_data);
+        let x3dh = OMatrix::<_, Dyn, U4>::from_row_slice(&x3dh_data);
 
         // example camera calibration matrix
         #[rustfmt::skip]
@@ -355,7 +355,7 @@ mod tests {
             data.push(r / t);
             data.push(s / t);
         }
-        let x2d_expected = OMatrix::<_, Dynamic, U2>::from_row_slice(&data);
+        let x2d_expected = OMatrix::<_, Dyn, U2>::from_row_slice(&data);
 
         // convert homogeneous 3D coords into normal 3D coords
         let x3d = x3dh.fixed_columns::<3>(0).into_owned();
@@ -374,7 +374,7 @@ mod tests {
             data.push(r / t);
             data.push(s / t);
         }
-        let x2d_actual = OMatrix::<_, Dynamic, U2>::from_row_slice(&data);
+        let x2d_actual = OMatrix::<_, Dyn, U2>::from_row_slice(&data);
 
         assert_eq!(x2d_expected.nrows(), x2d_actual.nrows());
         assert_eq!(x2d_expected.ncols(), x2d_actual.ncols());
