@@ -97,10 +97,10 @@ where
     R: RealField,
     N: DimMul<U2>,
     DimProd<N, U2>: DimMin<U11>,
-    DefaultAllocator: Allocator<R, N, U3>
-        + Allocator<R, N, U2>
-        + Allocator<R, DimProd<N, U2>, U11>
-        + Allocator<R, DimProd<N, U2>, U1>,
+    DefaultAllocator: Allocator<N, U3>
+        + Allocator<N, U2>
+        + Allocator<DimProd<N, U2>, U11>
+        + Allocator<DimProd<N, U2>, U1>,
 {
     B: OMatrix<R, DimProd<N, U2>, U11>,
     c: OMatrix<R, DimProd<N, U2>, U1>,
@@ -112,10 +112,10 @@ where
     R: RealField + Copy,
     N: DimMul<U2>,
     DimProd<N, U2>: DimMin<U11>,
-    DefaultAllocator: Allocator<R, N, U3>
-        + Allocator<R, N, U2>
-        + Allocator<R, DimProd<N, U2>, U11>
-        + Allocator<R, DimProd<N, U2>, U1>,
+    DefaultAllocator: Allocator<N, U3>
+        + Allocator<N, U2>
+        + Allocator<DimProd<N, U2>, U11>
+        + Allocator<DimProd<N, U2>, U1>,
 {
     let n_pts = world.nrows();
 
@@ -197,16 +197,16 @@ where
     N: DimMul<U2>,
     DimProd<N, U2>: DimMin<U11>,
     DimMinimum<DimProd<N, U2>, U11>: DimSub<U1>,
-    DefaultAllocator: Allocator<R, N, U3>
-        + Allocator<(usize, usize), <<N as DimMul<U2>>::Output as DimMin<U11>>::Output>
-        + Allocator<(R, usize), <<N as DimMul<U2>>::Output as DimMin<U11>>::Output>
-        + Allocator<R, N, U2>
-        + Allocator<R, DimProd<N, U2>, U11>
-        + Allocator<R, DimProd<N, U2>, U1>
-        + Allocator<R, DimMinimum<DimProd<N, U2>, U11>, U11>
-        + Allocator<R, DimProd<N, U2>, DimMinimum<DimProd<N, U2>, U11>>
-        + Allocator<R, DimMinimum<DimProd<N, U2>, U11>, U1>
-        + Allocator<R, DimDiff<DimMinimum<DimProd<N, U2>, U11>, U1>, U1>,
+    DefaultAllocator: Allocator<N, U3>
+        + Allocator<<<N as DimMul<U2>>::Output as DimMin<U11>>::Output>
+        + Allocator<<<N as DimMul<U2>>::Output as DimMin<U11>>::Output>
+        + Allocator<N, U2>
+        + Allocator<DimProd<N, U2>, U11>
+        + Allocator<DimProd<N, U2>, U1>
+        + Allocator<DimMinimum<DimProd<N, U2>, U11>, U11>
+        + Allocator<DimProd<N, U2>, DimMinimum<DimProd<N, U2>, U11>>
+        + Allocator<DimMinimum<DimProd<N, U2>, U11>, U1>
+        + Allocator<DimDiff<DimMinimum<DimProd<N, U2>, U11>, U1>, U1>,
 {
     #[allow(non_snake_case)]
     let Bc { B, c } = build_Bc(world, cam);
