@@ -75,8 +75,8 @@
 //!
 //! - [`cam-geom`](https://crates.io/crates/cam-geom) - Rust crate with 3D
 //!   camera models which can use the calibration data from DLT.
-//! - [`dlt-examples`](https://github.com/strawlab/dlt/blob/master/dlt-examples)
-//!   - Unpublished crate in the dlt repository which demonstrates usage with
+//! - [`dlt-examples`](https://github.com/strawlab/dlt/blob/master/dlt-examples) -
+//!   Unpublished crate in the dlt repository which demonstrates usage with
 //!   cam-geom library.
 
 #![deny(rust_2018_idioms, unsafe_code, missing_docs)]
