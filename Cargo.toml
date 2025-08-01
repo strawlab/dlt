@@ -18,7 +18,7 @@ categories = [
 rust-version = "1.65"
 
 [dependencies]
-nalgebra = { version = "0.33", default-features = false, features = ["libm"] }
+nalgebra = { version = "0.34", default-features = false, features = ["libm"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
