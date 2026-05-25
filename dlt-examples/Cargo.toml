@@ -11,5 +11,5 @@ rust-version = "1.65"
 [dependencies]
 dlt = { path = ".." }
 cam-geom = "0.16"
-nalgebra = "0.34"
+nalgebra = "0.35"
 approx = "0.5"
