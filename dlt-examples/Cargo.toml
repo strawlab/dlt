@@ -3,13 +3,13 @@ name = "dlt-examples"
 version = "0.1.0"
 authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2021"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/strawlab/dlt"
-rust-version = "1.65"
+rust-version = "1.89"
 
 [dependencies]
 dlt = { path = ".." }
-cam-geom = "0.16"
-nalgebra = "0.34"
+cam-geom = "0.17"
+nalgebra = "0.35"
 approx = "0.5"

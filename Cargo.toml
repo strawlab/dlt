@@ -4,7 +4,7 @@ version = "0.14.0"
 authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2021"
 description = "DLT (direct linear transform) algorithm for camera calibration"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/strawlab/dlt"
 keywords = ["computer", "vision", "photogrammetry"]
@@ -15,10 +15,10 @@ categories = [
     "science",
     "science::robotics",
 ]
-rust-version = "1.65"
+rust-version = "1.89"
 
 [dependencies]
-nalgebra = { version = "0.34", default-features = false, features = ["libm"] }
+nalgebra = { version = "0.35", default-features = false, features = ["libm"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
