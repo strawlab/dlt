@@ -9,6 +9,7 @@ semver_check = true
 [[package]]
 name = "dlt-examples"
 release = false
+publish = false
 
 [changelog]
 header = """# Changelog
